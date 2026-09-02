@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐸 小青蛙乐园</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(145deg, #2b5a3a 0%, #1d3e2a 100%);
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 40px 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: #f5e9a0;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #cfe3cf;
+            font-size: 1.1rem;
+            margin-bottom: 35px;
+            opacity: 0.85;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+            padding-bottom: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 18px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 24px;
+            padding: 20px 16px 16px 16px;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+            text-decoration: none;
+            color: #1e3a2a;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid transparent;
+            backdrop-filter: blur(4px);
+        }
+        .card:hover {
+            transform: translateY(-6px) scale(1.02);
+            border-color: #f5d742;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+            background: #ffffff;
+        }
+        .card .icon {
+            font-size: 2.6rem;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        .card .name {
+            font-weight: 700;
+            font-size: 1.1rem;
+            word-break: break-word;
+            color: #1d3e2a;
+        }
+        .card .file-size {
+            font-size: 0.8rem;
+            color: #5a7a5a;
+            margin-top: 6px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 12px;
+            border-radius: 30px;
+            display: inline-block;
+            align-self: flex-start;
+        }
+        .card .badge {
+            margin-top: 10px;
+            font-size: 0.7rem;
+            background: #2b5a3a;
+            color: #f5f9e8;
+            padding: 3px 12px;
+            border-radius: 30px;
+            align-self: flex-start;
+        }
+        .footer {
+            margin-top: 35px;
+            text-align: center;
+            color: #b2d3b2;
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+            letter-spacing: 0.5px;
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 2rem; }
+            .container { padding: 25px 16px; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐸 吉蛙小游戏</h1>
+        <div class="subtitle">✨ 点击任意卡片开始冒险 ✨</div>
+
+        <div class="grid">
+            <!-- 这里列出所有 .html 文件，按你的文件名生成 -->
+            <a href="colorful_frog.html" class="card">
+                <div class="icon">🎨</div>
+                <div class="name">colorful_frog</div>
+                <span class="file-size">📄 26.5 MB</span>
+                <span class="badge">彩色青蛙</span>
+            </a>
+
+            <a href="rotate_colorful_frogs.html" class="card">
+                <div class="icon">🌀</div>
+                <div class="name">rotate_colorful_frogs</div>
+                <span class="file-size">📄 48.3 MB</span>
+                <span class="badge">旋转彩色青蛙</span>
+            </a>
+
+            <a href="rotate_frogs.html" class="card">
+                <div class="icon">🔄</div>
+                <div class="name">rotate_frogs</div>
+                <span class="file-size">📄 12.1 MB</span>
+                <span class="badge">旋转青蛙</span>
+            </a>
+
+            <a href="where_are_the_frogs_75.html" class="card">
+                <div class="icon">🔎</div>
+                <div class="name">where_are_the_frogs_75</div>
+                <span class="file-size">📄 91.6 MB</span>
+                <span class="badge">吉蛙蛙在哪里？</span>
+            </a>
+
+            <a href="Who_am_I.html" class="card">
+                <div class="icon">❓</div>
+                <div class="name">Who_am_I</div>
+                <span class="file-size">📄 19.3 MB</span>
+                <span class="badge">我是谁？</span>
+            </a>
+        </div>
+
+    </div>
+</body>
+</html>
