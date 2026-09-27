@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>吉蛙语音节表 · 咕呱</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0e1a2b; color: #d5e8f7;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 30px 16px 50px;
+  }
+  h1 { font-size: 24px; color: #7CFF9E; letter-spacing: 5px; margin-bottom: 6px; }
+  .subtitle { color: #8fb8d8; font-size: 13px; letter-spacing: 1px; margin-bottom: 4px; }
+  .info { color: #5a7a95; font-size: 11px; margin-bottom: 22px; }
+  table { border-collapse: separate; border-spacing: 6px; margin-bottom: 22px; }
+  th, td { text-align: center; vertical-align: middle; user-select: none; }
+  th.corner { color: #4a6478; font-size: 11px; font-weight: normal; padding: 4px; }
+  th.vowel-head {
+    color: #6ec8ff; font-size: 20px; font-weight: 600;
+    padding: 6px 4px; width: 100px; font-family: "Times New Roman", serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  th.vowel-head:hover { color: #a0ddff; text-shadow: 0 0 12px rgba(110,200,255,0.5); }
+  th.cons-head {
+    background: #13293d; border: 1px solid #1e3a54; border-radius: 8px;
+    padding: 10px 8px; color: #7CFF9E; font-family: "Times New Roman", serif;
+    font-weight: 600; cursor: pointer; transition: all 0.15s; width: 108px;
+  }
+  th.cons-head:hover { background: #1b3a56; border-color: #3aa76d; }
+  th.cons-head .sym { font-size: 20px; display: block; line-height: 1.1; }
+  th.cons-head .lab {
+    font-size: 9px; color: #8fb8d8;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-weight: normal; margin-top: 2px; letter-spacing: 0.5px;
+  }
+  td.syl {
+    background: #162b42; border: 1px solid #1e3a54; border-radius: 8px;
+    padding: 10px 4px; cursor: pointer; transition: all 0.15s;
+    position: relative; overflow: hidden;
+    font-family: "Times New Roman", "Cambria", serif;
+    font-size: 18px; color: #d5e8f7; letter-spacing: 1px;
+  }
+  td.syl:hover {
+    background: #1e3d5c; border-color: #3aa76d; color: #7CFF9E;
+    transform: translateY(-2px); box-shadow: 0 5px 14px rgba(58, 167, 109, 0.25);
+  }
+  td.syl:active { transform: translateY(0) scale(0.97); }
+  td.syl.playing { animation: flash 0.5s ease; }
+  @keyframes flash {
+    0% { box-shadow: 0 0 0 0 rgba(124, 255, 158, 0.7); }
+    100% { box-shadow: 0 0 0 18px rgba(124, 255, 158, 0); }
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; max-width: 720px; margin-bottom: 10px; }
+  .legend-item { font-size: 11px; color: #8fb8d8; display: flex; align-items: center; gap: 6px; }
+  .legend-item .sym { color: #7CFF9E; font-family: "Times New Roman", serif; font-size: 14px; font-weight: 600; min-width: 20px; text-align: center; }
+  .legend-item .sym.v { color: #6ec8ff; }
+  footer { margin-top: 26px; color: #4a6478; font-size: 10px; text-align: center; line-height: 1.7; max-width: 700px; }
+  footer code { color: #6ec8ff; background: #13293d; padding: 1px 5px; border-radius: 3px; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<h1>吉 蛙 语 音 节 表</h1>
+<div class="subtitle">7 辅音 × 5 元音 = 35 个 CV 音节</div>
+<div class="info">点击格子播放音节 · 点击左侧辅音单独听辅音 · 点击顶部元音单独听元音</div>
+
+<table id="sylTable"></table>
+<div class="legend" id="legend"></div>
+
+<footer>
+  <div><code>k</code>/<code>kw</code>/<code>g</code> 声囊爆音　|　<code>ŋ</code> 颌鼻音　|　<code>h̃</code> 鼻擦音　|　<code>ʔ</code> 喉塞音　|　<code>ts</code> 弹舌擦音</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/15.0.4/Tone.js"></script>
+<script>
+if (typeof Tone === 'undefined') {
+  console.error('Tone.js not loaded');
+  throw new Error('Tone.js not loaded');
+}
+
+let audioReady = false;
+let masterGain;
+
+async function initAudio() {
+  if (audioReady) return true;
+  try {
+    await Tone.start();
+    masterGain = new Tone.Gain(1.0).toDestination();
+    audioReady = true;
+    return true;
+  } catch (e) {
+    console.error('音频启动失败：', e);
+    return false;
+  }
+}
+
+// ============================================================
+//  元音共振峰
+// ============================================================
+
+const VOWEL_FORMANTS = {
+  a: [[730, 1.00], [1090, 0.75], [2440, 0.20]],
+  e: [[530, 1.00], [1840, 0.75], [2480, 0.20]],
+  i: [[270, 1.00], [2290, 0.75], [3010, 0.20]],
+  o: [[570, 1.00], [840,  0.75], [2410, 0.20]],
+  u: [[300, 1.00], [870,  0.75], [2240, 0.20]],
+};
+
+// ============================================================
+//  辅音档案
+// ============================================================
+
+const CONSONANT_PROFILES = {
+  'ʔ': {
+    label: '喉塞音',
+    f1Locus: null, f2Locus: null,
+    transDur: 0.030,
+    voiceDelay: 0.065, voiceStart: 0.0,
+    burst: null,
+    nasal: false,
+  },
+  'k': {
+    label: '清声囊爆音',
+    f1Locus: 200, f2Locus: 2000,
+    transDur: 0.050,
+    voiceDelay: 0.028, voiceStart: 0.0,
+    burst: { freq: 2800, q: 1.4, dur: 0.018, gain: 0.45 },
+    nasal: false,
+  },
+  'kw': {
+    label: '圆唇软腭音',
+    f1Locus: 200, f2Locus: 700,
+    transDur: 0.065,
+    voiceDelay: 0.026, voiceStart: 0.0,
+    burst: { freq: 2000, q: 1.4, dur: 0.020, gain: 0.42 },
+    nasal: false,
+  },
+  'g': {
+    label: '浊声囊爆音',
+    f1Locus: 200, f2Locus: 2000,
+    transDur: 0.055,
+    voiceDelay: 0.003, voiceStart: 0.40,
+    burst: { freq: 900, q: 1.5, dur: 0.012, gain: 0.28 },
+    nasal: false,
+  },
+  'ŋ': {
+    label: '颌鼻音',
+    f1Locus: 350, f2Locus: 1000,
+    transDur: 0.090,
+    voiceDelay: 0.005, voiceStart: 0.70,
+    burst: null,
+    nasal: true,
+  },
+  'h̃': {
+    label: '鼻擦音',
+    f1Locus: null, f2Locus: null,
+    transDur: 0.060,
+    voiceDelay: 0.070, voiceStart: 0.05,
+    burst: { freq: 1200, q: 0.7, dur: 0.10, gain: 0.18 },
+    nasal: true,
+  },
+  'ts': {
+    label: '弹舌擦音',
+    f1Locus: 200, f2Locus: 2400,
+    transDur: 0.040,
+    voiceDelay: 0.022, voiceStart: 0.0,
+    burst: { freq: 5500, q: 2.5, dur: 0.018, gain: 0.55 },
+    nasal: false,
+  },
+};
+
+const F0 = 85;
+const TOTAL_DUR = 0.40;
+
+// ============================================================
+//  合成核心
+// ============================================================
+
+async function playSyllable(consSym, vowelSym) {
+  const ok = await initAudio();
+  if (!ok) return;
+
+  const now = Tone.now() + 0.08;
+  const prof = CONSONANT_PROFILES[consSym];
+  const vowel = VOWEL_FORMANTS[vowelSym];
+  const nodes = [];
+
+  const osc = new Tone.Oscillator({ frequency: F0, type: 'sawtooth', volume: -6 });
+  const voiceGain = new Tone.Gain(0);
+  osc.connect(voiceGain);
+  nodes.push(osc, voiceGain);
+
+  vowel.forEach(([fc, g], i) => {
+    const filter = new Tone.Filter({ type: 'bandpass', frequency: fc, Q: 3 });
+    const gainComp = new Tone.Gain(g * 6.0);
+    voiceGain.connect(filter);
+    filter.connect(gainComp);
+    gainComp.connect(masterGain);
+    nodes.push(filter, gainComp);
+
+    let startFreq = fc;
+    if (i === 0 && prof.f1Locus !== null) startFreq = prof.f1Locus;
+    if (i === 1 && prof.f2Locus !== null) startFreq = prof.f2Locus;
+
+    filter.frequency.cancelScheduledValues(now);
+    filter.frequency.setValueAtTime(startFreq, now);
+    if (Math.abs(startFreq - fc) > 1) {
+      filter.frequency.exponentialRampToValueAtTime(fc, now + prof.transDur);
+    }
+  });
+
+  voiceGain.gain.cancelScheduledValues(now);
+  voiceGain.gain.setValueAtTime(prof.voiceStart, now);
+
+  if (prof.voiceDelay > 0.005) {
+    voiceGain.gain.setValueAtTime(prof.voiceStart, now + prof.voiceDelay);
+    voiceGain.gain.linearRampToValueAtTime(1.0, now + prof.voiceDelay + 0.035);
+  } else {
+    voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.035);
+  }
+  voiceGain.gain.setValueAtTime(1.0, now + 0.22);
+  voiceGain.gain.exponentialRampToValueAtTime(0.001, now + TOTAL_DUR);
+
+  osc.start(now);
+  osc.stop(now + TOTAL_DUR + 0.05);
+
+  if (prof.burst) {
+    const noise = new Tone.Noise('white');
+    const nf = new Tone.Filter({ type: 'bandpass', frequency: prof.burst.freq, Q: prof.burst.q });
+    const ne = new Tone.Gain(0);
+    noise.connect(nf); nf.connect(ne); ne.connect(masterGain);
+    nodes.push(noise, nf, ne);
+
+    ne.gain.setValueAtTime(0, now);
+    ne.gain.linearRampToValueAtTime(prof.burst.gain, now + 0.002);
+    ne.gain.exponentialRampToValueAtTime(0.001, now + prof.burst.dur);
+
+    noise.start(now);
+    noise.stop(now + prof.burst.dur + 0.02);
+  }
+
+  if (prof.nasal) {
+    const nasalFreq = consSym === 'h̃' ? 180 : 230;
+    const nasalOsc = new Tone.Oscillator({ frequency: nasalFreq, type: 'sine' });
+    const ng = new Tone.Gain(0.20);
+    nasalOsc.connect(ng); ng.connect(masterGain);
+    nodes.push(nasalOsc, ng);
+
+    ng.gain.setValueAtTime(0.20, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.30);
+    nasalOsc.start(now);
+    nasalOsc.stop(now + 0.34);
+  }
+
+  setTimeout(() => {
+    nodes.forEach(n => { try { n.dispose(); } catch (e) {} });
+  }, (TOTAL_DUR + 0.6) * 1000);
+}
+
+async function playConsonant(consSym) {
+  const ok = await initAudio();
+  if (!ok) return;
+
+  const now = Tone.now() + 0.08;
+  const prof = CONSONANT_PROFILES[consSym];
+  const nodes = [];
+
+  const osc = new Tone.Oscillator({ frequency: F0, type: 'sawtooth', volume: -6 });
+  const voiceGain = new Tone.Gain(0);
+  osc.connect(voiceGain);
+  nodes.push(osc, voiceGain);
+
+  const f1 = prof.f1Locus !== null ? prof.f1Locus : 500;
+  const f2 = prof.f2Locus !== null ? prof.f2Locus : 1200;
+  const f3 = 2500;
+  const defs = [[f1, 1.0], [f2, 0.7], [f3, 0.2]];
+
+  defs.forEach(([fc, g]) => {
+    const filter = new Tone.Filter({ type: 'bandpass', frequency: fc, Q: 3 });
+    const gainComp = new Tone.Gain(g * 6.0);
+    voiceGain.connect(filter); filter.connect(gainComp); gainComp.connect(masterGain);
+    nodes.push(filter, gainComp);
+  });
+
+  voiceGain.gain.setValueAtTime(prof.voiceStart, now);
+  voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.035);
+  voiceGain.gain.setValueAtTime(1.0, now + 0.14);
+  voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+  osc.start(now);
+  osc.stop(now + 0.30);
+
+  if (prof.burst) {
+    const noise = new Tone.Noise('white');
+    const nf = new Tone.Filter({ type: 'bandpass', frequency: prof.burst.freq, Q: prof.burst.q });
+    const ne = new Tone.Gain(0);
+    noise.connect(nf); nf.connect(ne); ne.connect(masterGain);
+    nodes.push(noise, nf, ne);
+    ne.gain.setValueAtTime(0, now);
+    ne.gain.linearRampToValueAtTime(prof.burst.gain, now + 0.002);
+    ne.gain.exponentialRampToValueAtTime(0.001, now + prof.burst.dur);
+    noise.start(now);
+    noise.stop(now + prof.burst.dur + 0.02);
+  }
+
+  if (prof.nasal) {
+    const nasalOsc = new Tone.Oscillator({ frequency: 220, type: 'sine' });
+    const ng = new Tone.Gain(0.20);
+    nasalOsc.connect(ng); ng.connect(masterGain);
+    nodes.push(nasalOsc, ng);
+    ng.gain.setValueAtTime(0.20, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    nasalOsc.start(now);
+    nasalOsc.stop(now + 0.28);
+  }
+
+  setTimeout(() => {
+    nodes.forEach(n => { try { n.dispose(); } catch (e) {} });
+  }, 800);
+}
+
+async function playVowel(vowelSym) {
+  const ok = await initAudio();
+  if (!ok) return;
+
+  const now = Tone.now() + 0.08;
+  const vowel = VOWEL_FORMANTS[vowelSym];
+  const nodes = [];
+
+  const osc = new Tone.Oscillator({ frequency: F0, type: 'sawtooth', volume: -6 });
+  const voiceGain = new Tone.Gain(0);
+  osc.connect(voiceGain);
+  nodes.push(osc, voiceGain);
+
+  vowel.forEach(([fc, g]) => {
+    const filter = new Tone.Filter({ type: 'bandpass', frequency: fc, Q: 3 });
+    const gainComp = new Tone.Gain(g * 6.0);
+    voiceGain.connect(filter); filter.connect(gainComp); gainComp.connect(masterGain);
+    nodes.push(filter, gainComp);
+  });
+
+  voiceGain.gain.setValueAtTime(0, now);
+  voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.035);
+  voiceGain.gain.setValueAtTime(1.0, now + 0.22);
+  voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+
+  osc.start(now);
+  osc.stop(now + 0.40);
+
+  setTimeout(() => {
+    nodes.forEach(n => { try { n.dispose(); } catch (e) {} });
+  }, 800);
+}
+
+// ============================================================
+//  渲染表格
+// ============================================================
+
+const CONSONANTS = ['ʔ', 'k', 'kw', 'g', 'ŋ', 'h̃', 'ts'];
+const VOWELS = ['a', 'e', 'i', 'o', 'u'];
+
+const table = document.getElementById('sylTable');
+
+const thead = document.createElement('thead');
+const headRow = document.createElement('tr');
+const corner = document.createElement('th');
+corner.className = 'corner';
+corner.textContent = 'C ＼ V';
+headRow.appendChild(corner);
+
+for (const v of VOWELS) {
+  const th = document.createElement('th');
+  th.className = 'vowel-head';
+  th.textContent = v;
+  th.title = `播放元音 /${v}/`;
+  th.addEventListener('click', () => playVowel(v));
+  headRow.appendChild(th);
+}
+thead.appendChild(headRow);
+table.appendChild(thead);
+
+const tbody = document.createElement('tbody');
+for (const c of CONSONANTS) {
+  const prof = CONSONANT_PROFILES[c];
+  const row = document.createElement('tr');
+
+  const consTh = document.createElement('th');
+  consTh.className = 'cons-head';
+  consTh.innerHTML = `<span class="sym">${c}</span><span class="lab">${prof.label}</span>`;
+  consTh.title = `播放辅音 ${c}`;
+  consTh.addEventListener('click', () => playConsonant(c));
+  row.appendChild(consTh);
+
+  for (const v of VOWELS) {
+    const td = document.createElement('td');
+    td.className = 'syl';
+    td.textContent = c + v;
+    td.title = `播放 ${c}${v}`;
+    td.addEventListener('click', () => {
+      playSyllable(c, v);
+      td.classList.remove('playing');
+      void td.offsetWidth;
+      td.classList.add('playing');
+    });
+    row.appendChild(td);
+  }
+
+  tbody.appendChild(row);
+}
+table.appendChild(tbody);
+
+const legend = document.getElementById('legend');
+for (const c of CONSONANTS) {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<span class="sym">${c}</span> ${CONSONANT_PROFILES[c].label}`;
+  legend.appendChild(item);
+}
+for (const v of VOWELS) {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<span class="sym v">${v}</span> 元音`;
+  legend.appendChild(item);
+}
+
+document.body.addEventListener('click', initAudio, { once: true });
+</script>
+
+</body>
+</html>
