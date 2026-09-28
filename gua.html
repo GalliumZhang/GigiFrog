@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>吉蛙语音节表 · 咕呱</title>
+<title>吉蛙语音节表 · 尖细版</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -63,7 +63,7 @@
 <body>
 
 <h1>吉 蛙 语 音 节 表</h1>
-<div class="subtitle">7 辅音 × 5 元音 = 35 个 CV 音节</div>
+<div class="subtitle">7 辅音 × 5 元音 = 35 个 CV 音节 · 尖细版</div>
 <div class="info">点击格子播放音节 · 点击左侧辅音单独听辅音 · 点击顶部元音单独听元音</div>
 
 <table id="sylTable"></table>
@@ -82,12 +82,18 @@ if (typeof Tone === 'undefined') {
 
 let audioReady = false;
 let masterGain;
+let highpass;
 
 async function initAudio() {
   if (audioReady) return true;
   try {
     await Tone.start();
-    masterGain = new Tone.Gain(1.0).toDestination();
+    highpass = new Tone.Filter({
+      type: 'highpass',
+      frequency: 250,
+      Q: 0.7
+    }).toDestination();
+    masterGain = new Tone.Gain(0.9).connect(highpass);
     audioReady = true;
     return true;
   } catch (e) {
@@ -97,19 +103,24 @@ async function initAudio() {
 }
 
 // ============================================================
-//  元音共振峰
+//  音高与共振峰参数（尖细版）
 // ============================================================
 
+const F0 = 280;
+const SHIFT = 1.7;
+
 const VOWEL_FORMANTS = {
-  a: [[730, 1.00], [1090, 0.75], [2440, 0.20]],
-  e: [[530, 1.00], [1840, 0.75], [2480, 0.20]],
-  i: [[270, 1.00], [2290, 0.75], [3010, 0.20]],
-  o: [[570, 1.00], [840,  0.75], [2410, 0.20]],
-  u: [[300, 1.00], [870,  0.75], [2240, 0.20]],
+  a: [[730*SHIFT, 1.00], [1090*SHIFT, 0.75], [2440*SHIFT, 0.20]],
+  e: [[530*SHIFT, 1.00], [1840*SHIFT, 0.75], [2480*SHIFT, 0.20]],
+  i: [[270*SHIFT, 1.00], [2290*SHIFT, 0.75], [3010*SHIFT, 0.20]],
+  o: [[570*SHIFT, 1.00], [840*SHIFT,  0.75], [2410*SHIFT, 0.20]],
+  u: [[300*SHIFT, 1.00], [870*SHIFT,  0.75], [2240*SHIFT, 0.20]],
 };
 
 // ============================================================
 //  辅音档案
+//  click：极短促的点击瞬态（5-10ms），听起来像"咔"而不是"嘶"
+//  f1Locus/f2Locus：起始共振峰位置，与元音目标拉得更开
 // ============================================================
 
 const CONSONANT_PROFILES = {
@@ -117,62 +128,67 @@ const CONSONANT_PROFILES = {
     label: '喉塞音',
     f1Locus: null, f2Locus: null,
     transDur: 0.030,
-    voiceDelay: 0.065, voiceStart: 0.0,
-    burst: null,
+    voiceDelay: 0.075, voiceStart: 0.0,
+    click: null,
     nasal: false,
   },
   'k': {
     label: '清声囊爆音',
-    f1Locus: 200, f2Locus: 2000,
-    transDur: 0.050,
-    voiceDelay: 0.028, voiceStart: 0.0,
-    burst: { freq: 2800, q: 1.4, dur: 0.018, gain: 0.45 },
+    f1Locus: 350, f2Locus: 3800,
+    transDur: 0.045,
+    voiceDelay: 0.030, voiceStart: 0.0,
+    // 清爆破：高频短点击，像"咔"
+    click: { freq: 3200, q: 1.2, dur: 0.008, gain: 0.45 },
     nasal: false,
   },
   'kw': {
     label: '圆唇软腭音',
-    f1Locus: 200, f2Locus: 700,
-    transDur: 0.065,
-    voiceDelay: 0.026, voiceStart: 0.0,
-    burst: { freq: 2000, q: 1.4, dur: 0.020, gain: 0.42 },
+    f1Locus: 350, f2Locus: 1400,
+    transDur: 0.060,
+    voiceDelay: 0.028, voiceStart: 0.0,
+    // 圆唇：中频短点击
+    click: { freq: 2000, q: 1.2, dur: 0.009, gain: 0.40 },
     nasal: false,
   },
   'g': {
     label: '浊声囊爆音',
-    f1Locus: 200, f2Locus: 2000,
-    transDur: 0.055,
-    voiceDelay: 0.003, voiceStart: 0.40,
-    burst: { freq: 900, q: 1.5, dur: 0.012, gain: 0.28 },
+    f1Locus: 350, f2Locus: 3800,
+    transDur: 0.050,
+    voiceDelay: 0.003, voiceStart: 0.50,
+    // 浊爆破：低频点击，主要靠声带起振
+    click: { freq: 800, q: 1.0, dur: 0.010, gain: 0.30 },
     nasal: false,
   },
   'ŋ': {
     label: '颌鼻音',
-    f1Locus: 350, f2Locus: 1000,
+    f1Locus: 550, f2Locus: 1900,
     transDur: 0.090,
-    voiceDelay: 0.005, voiceStart: 0.70,
-    burst: null,
+    voiceDelay: 0.005, voiceStart: 0.75,
+    // 鼻音：无点击，靠共振峰和鼻腔共鸣
+    click: null,
     nasal: true,
   },
   'h̃': {
     label: '鼻擦音',
     f1Locus: null, f2Locus: null,
     transDur: 0.060,
-    voiceDelay: 0.070, voiceStart: 0.05,
-    burst: { freq: 1200, q: 0.7, dur: 0.10, gain: 0.18 },
+    voiceDelay: 0.060, voiceStart: 0.05,
+    // 鼻擦：持续的柔和噪声，不是点击
+    click: { freq: 1000, q: 0.6, dur: 0.085, gain: 0.14 },
     nasal: true,
   },
   'ts': {
     label: '弹舌擦音',
-    f1Locus: 200, f2Locus: 2400,
-    transDur: 0.040,
+    f1Locus: 350, f2Locus: 4200,
+    transDur: 0.038,
     voiceDelay: 0.022, voiceStart: 0.0,
-    burst: { freq: 5500, q: 2.5, dur: 0.018, gain: 0.55 },
+    // 弹舌：极短高频点击，像"嚓"
+    click: { freq: 5000, q: 1.8, dur: 0.007, gain: 0.50 },
     nasal: false,
   },
 };
 
-const F0 = 85;
-const TOTAL_DUR = 0.40;
+const TOTAL_DUR = 0.38;
 
 // ============================================================
 //  合成核心
@@ -187,14 +203,16 @@ async function playSyllable(consSym, vowelSym) {
   const vowel = VOWEL_FORMANTS[vowelSym];
   const nodes = [];
 
-  const osc = new Tone.Oscillator({ frequency: F0, type: 'sawtooth', volume: -6 });
+  // 声带源
+  const osc = new Tone.Oscillator({ frequency: F0, type: 'triangle', volume: -4 });
   const voiceGain = new Tone.Gain(0);
   osc.connect(voiceGain);
   nodes.push(osc, voiceGain);
 
+  // 三个并联共振峰滤波器
   vowel.forEach(([fc, g], i) => {
     const filter = new Tone.Filter({ type: 'bandpass', frequency: fc, Q: 3 });
-    const gainComp = new Tone.Gain(g * 6.0);
+    const gainComp = new Tone.Gain(g * 5.0);
     voiceGain.connect(filter);
     filter.connect(gainComp);
     gainComp.connect(masterGain);
@@ -211,47 +229,55 @@ async function playSyllable(consSym, vowelSym) {
     }
   });
 
+  // 声带起振包络
   voiceGain.gain.cancelScheduledValues(now);
   voiceGain.gain.setValueAtTime(prof.voiceStart, now);
 
   if (prof.voiceDelay > 0.005) {
     voiceGain.gain.setValueAtTime(prof.voiceStart, now + prof.voiceDelay);
-    voiceGain.gain.linearRampToValueAtTime(1.0, now + prof.voiceDelay + 0.035);
+    voiceGain.gain.linearRampToValueAtTime(1.0, now + prof.voiceDelay + 0.030);
   } else {
-    voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.035);
+    voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.030);
   }
-  voiceGain.gain.setValueAtTime(1.0, now + 0.22);
+  voiceGain.gain.setValueAtTime(1.0, now + 0.20);
   voiceGain.gain.exponentialRampToValueAtTime(0.001, now + TOTAL_DUR);
 
   osc.start(now);
   osc.stop(now + TOTAL_DUR + 0.05);
 
-  if (prof.burst) {
-    const noise = new Tone.Noise('white');
-    const nf = new Tone.Filter({ type: 'bandpass', frequency: prof.burst.freq, Q: prof.burst.q });
+  // ---------- 辅音点击瞬态 ----------
+  if (prof.click) {
+    const noise = new Tone.Noise('pink');
+    const nf = new Tone.Filter({
+      type: 'bandpass',
+      frequency: prof.click.freq,
+      Q: prof.click.q
+    });
     const ne = new Tone.Gain(0);
     noise.connect(nf); nf.connect(ne); ne.connect(masterGain);
     nodes.push(noise, nf, ne);
 
+    // 极快起振 + 极快衰减，形成"咔"的听感
     ne.gain.setValueAtTime(0, now);
-    ne.gain.linearRampToValueAtTime(prof.burst.gain, now + 0.002);
-    ne.gain.exponentialRampToValueAtTime(0.001, now + prof.burst.dur);
+    ne.gain.linearRampToValueAtTime(prof.click.gain, now + 0.001);
+    ne.gain.exponentialRampToValueAtTime(0.001, now + prof.click.dur);
 
     noise.start(now);
-    noise.stop(now + prof.burst.dur + 0.02);
+    noise.stop(now + prof.click.dur + 0.02);
   }
 
+  // 鼻腔共鸣
   if (prof.nasal) {
-    const nasalFreq = consSym === 'h̃' ? 180 : 230;
+    const nasalFreq = consSym === 'h̃' ? 320 : 420;
     const nasalOsc = new Tone.Oscillator({ frequency: nasalFreq, type: 'sine' });
-    const ng = new Tone.Gain(0.20);
+    const ng = new Tone.Gain(0.12);
     nasalOsc.connect(ng); ng.connect(masterGain);
     nodes.push(nasalOsc, ng);
 
-    ng.gain.setValueAtTime(0.20, now);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.30);
+    ng.gain.setValueAtTime(0.12, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
     nasalOsc.start(now);
-    nasalOsc.stop(now + 0.34);
+    nasalOsc.stop(now + 0.32);
   }
 
   setTimeout(() => {
@@ -267,53 +293,53 @@ async function playConsonant(consSym) {
   const prof = CONSONANT_PROFILES[consSym];
   const nodes = [];
 
-  const osc = new Tone.Oscillator({ frequency: F0, type: 'sawtooth', volume: -6 });
+  const osc = new Tone.Oscillator({ frequency: F0, type: 'triangle', volume: -4 });
   const voiceGain = new Tone.Gain(0);
   osc.connect(voiceGain);
   nodes.push(osc, voiceGain);
 
-  const f1 = prof.f1Locus !== null ? prof.f1Locus : 500;
-  const f2 = prof.f2Locus !== null ? prof.f2Locus : 1200;
-  const f3 = 2500;
+  const f1 = prof.f1Locus !== null ? prof.f1Locus : 700;
+  const f2 = prof.f2Locus !== null ? prof.f2Locus : 1800;
+  const f3 = 3200;
   const defs = [[f1, 1.0], [f2, 0.7], [f3, 0.2]];
 
   defs.forEach(([fc, g]) => {
     const filter = new Tone.Filter({ type: 'bandpass', frequency: fc, Q: 3 });
-    const gainComp = new Tone.Gain(g * 6.0);
+    const gainComp = new Tone.Gain(g * 5.0);
     voiceGain.connect(filter); filter.connect(gainComp); gainComp.connect(masterGain);
     nodes.push(filter, gainComp);
   });
 
   voiceGain.gain.setValueAtTime(prof.voiceStart, now);
-  voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.035);
-  voiceGain.gain.setValueAtTime(1.0, now + 0.14);
-  voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+  voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.030);
+  voiceGain.gain.setValueAtTime(1.0, now + 0.13);
+  voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
   osc.start(now);
-  osc.stop(now + 0.30);
+  osc.stop(now + 0.28);
 
-  if (prof.burst) {
-    const noise = new Tone.Noise('white');
-    const nf = new Tone.Filter({ type: 'bandpass', frequency: prof.burst.freq, Q: prof.burst.q });
+  if (prof.click) {
+    const noise = new Tone.Noise('pink');
+    const nf = new Tone.Filter({ type: 'bandpass', frequency: prof.click.freq, Q: prof.click.q });
     const ne = new Tone.Gain(0);
     noise.connect(nf); nf.connect(ne); ne.connect(masterGain);
     nodes.push(noise, nf, ne);
     ne.gain.setValueAtTime(0, now);
-    ne.gain.linearRampToValueAtTime(prof.burst.gain, now + 0.002);
-    ne.gain.exponentialRampToValueAtTime(0.001, now + prof.burst.dur);
+    ne.gain.linearRampToValueAtTime(prof.click.gain, now + 0.001);
+    ne.gain.exponentialRampToValueAtTime(0.001, now + prof.click.dur);
     noise.start(now);
-    noise.stop(now + prof.burst.dur + 0.02);
+    noise.stop(now + prof.click.dur + 0.02);
   }
 
   if (prof.nasal) {
-    const nasalOsc = new Tone.Oscillator({ frequency: 220, type: 'sine' });
-    const ng = new Tone.Gain(0.20);
+    const nasalOsc = new Tone.Oscillator({ frequency: 380, type: 'sine' });
+    const ng = new Tone.Gain(0.12);
     nasalOsc.connect(ng); ng.connect(masterGain);
     nodes.push(nasalOsc, ng);
-    ng.gain.setValueAtTime(0.20, now);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    ng.gain.setValueAtTime(0.12, now);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
     nasalOsc.start(now);
-    nasalOsc.stop(now + 0.28);
+    nasalOsc.stop(now + 0.26);
   }
 
   setTimeout(() => {
@@ -329,25 +355,25 @@ async function playVowel(vowelSym) {
   const vowel = VOWEL_FORMANTS[vowelSym];
   const nodes = [];
 
-  const osc = new Tone.Oscillator({ frequency: F0, type: 'sawtooth', volume: -6 });
+  const osc = new Tone.Oscillator({ frequency: F0, type: 'triangle', volume: -4 });
   const voiceGain = new Tone.Gain(0);
   osc.connect(voiceGain);
   nodes.push(osc, voiceGain);
 
   vowel.forEach(([fc, g]) => {
     const filter = new Tone.Filter({ type: 'bandpass', frequency: fc, Q: 3 });
-    const gainComp = new Tone.Gain(g * 6.0);
+    const gainComp = new Tone.Gain(g * 5.0);
     voiceGain.connect(filter); filter.connect(gainComp); gainComp.connect(masterGain);
     nodes.push(filter, gainComp);
   });
 
   voiceGain.gain.setValueAtTime(0, now);
-  voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.035);
-  voiceGain.gain.setValueAtTime(1.0, now + 0.22);
-  voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+  voiceGain.gain.linearRampToValueAtTime(1.0, now + 0.030);
+  voiceGain.gain.setValueAtTime(1.0, now + 0.20);
+  voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.34);
 
   osc.start(now);
-  osc.stop(now + 0.40);
+  osc.stop(now + 0.38);
 
   setTimeout(() => {
     nodes.forEach(n => { try { n.dispose(); } catch (e) {} });
